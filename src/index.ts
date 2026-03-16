@@ -20,6 +20,17 @@ import { register as registerNotifications } from "./tools/notifications.js";
 import { register as registerTags } from "./tools/tags.js";
 import { register as registerRateLimit, TOOL_COSTS } from "./tools/rate-limit.js";
 
+import { register as registerProfileResource } from "./resources/profile.js";
+import { register as registerShelvesResource } from "./resources/shelves.js";
+import { register as registerGoalsResource } from "./resources/goals.js";
+import { register as registerBooksResource } from "./resources/books.js";
+import { register as registerReferenceResource } from "./resources/reference.js";
+
+import { register as registerRecommendPrompt } from "./prompts/recommend.js";
+import { register as registerReviewPrompt } from "./prompts/review.js";
+import { register as registerComparePrompt } from "./prompts/compare.js";
+import { register as registerTbrCleanupPrompt } from "./prompts/tbr-cleanup.js";
+
 const server = new McpServer({
   name: "hardcover-mcp-server",
   version: "1.0.0",
@@ -52,6 +63,17 @@ registerPrompts(server);
 registerNotifications(server);
 registerTags(server);
 registerRateLimit(server);
+
+registerProfileResource(server);
+registerShelvesResource(server);
+registerGoalsResource(server);
+registerBooksResource(server);
+registerReferenceResource(server);
+
+registerRecommendPrompt(server);
+registerReviewPrompt(server);
+registerComparePrompt(server);
+registerTbrCleanupPrompt(server);
 
 async function main() {
   if (!process.env.HARDCOVER_API_KEY) {

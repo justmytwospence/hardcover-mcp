@@ -5,7 +5,7 @@ import { formatToolError } from "../errors.js";
 import { formatResult, formatBook, formatBookSummary } from "../format.js";
 import { paginationSchema, computePagination, formatPaginationNote } from "../pagination.js";
 
-const GET_BOOK_QUERY = `
+export const GET_BOOK_QUERY = `
   query GetBook($id: Int!) {
     books_by_pk(id: $id) {
       id title subtitle slug description pages

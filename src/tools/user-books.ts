@@ -6,7 +6,7 @@ import { formatResult, formatUserBook } from "../format.js";
 import { paginationSchema } from "../pagination.js";
 import { USER_BOOK_STATUS_LABELS } from "../types.js";
 
-const GET_USER_BOOKS_QUERY = `
+export const GET_USER_BOOKS_QUERY = `
   query GetUserBooks($where: user_books_bool_exp, $limit: Int!, $offset: Int!, $order_by: [user_books_order_by!]) {
     user_books(where: $where, limit: $limit, offset: $offset, order_by: $order_by) {
       id status_id rating review_raw owned owned_copies

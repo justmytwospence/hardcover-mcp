@@ -4,7 +4,7 @@ import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
 import { formatResult } from "../format.js";
 
-const GET_GOALS_QUERY = `
+export const GET_GOALS_QUERY = `
   query GetGoals($where: goals_bool_exp) {
     goals(where: $where, order_by: { start_date: desc }) {
       id metric goal progress state

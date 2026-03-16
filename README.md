@@ -1,6 +1,6 @@
 # hardcover-mcp
 
-An MCP server for the [Hardcover](https://hardcover.app) book tracking API. Provides 31 tools for searching books, managing your library, creating lists, and more.
+An MCP server for the [Hardcover](https://hardcover.app) book tracking API. Provides tools, resources, and prompts for searching books, managing your library, creating lists, and more.
 
 ## Setup
 
@@ -95,6 +95,30 @@ npm install -g .
 | `hardcover_get_rate_limit` | 0 | Check remaining API budget |
 
 The Hardcover API allows 60 requests per minute. Each tool's API cost is included in its description so agents can budget accordingly.
+
+## Resources
+
+Resources provide contextual data that MCP clients can attach to conversations. Each resource is identified by a `hardcover://` URI.
+
+| Resource | URI | Cost | Description |
+|----------|-----|------|-------------|
+| Profile | `hardcover://profile` | 1 | Authenticated user's profile and reading stats |
+| Currently Reading | `hardcover://currently-reading` | 2 | Books you're currently reading |
+| Want to Read | `hardcover://want-to-read` | 2 | Your TBR shelf (up to 50 books) |
+| Reading Goals | `hardcover://goals` | 2 | Current year's reading goals with progress |
+| Book | `hardcover://books/{book_id}` | 1 | Detailed info for a specific book by ID |
+| Reference Data | `hardcover://reference/statuses` | 0 | Status codes, tag categories, reading formats, privacy settings |
+
+## Prompts
+
+Prompts are reusable templates for common workflows. They guide the LLM to use the available tools in a structured way.
+
+| Prompt | Args | Description |
+|--------|------|-------------|
+| `recommend-next-read` | `mood?`, `genre?` | Personalized book recommendation based on your library |
+| `reading-year-in-review` | `year?` | Comprehensive annual reading summary |
+| `compare-books` | `book_id_1`, `book_id_2` | Side-by-side comparison of two books |
+| `tbr-cleanup` | -- | Audit and prioritize your want-to-read list |
 
 ## Development
 
