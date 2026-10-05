@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 export function register(server: McpServer): void {
@@ -6,12 +6,11 @@ export function register(server: McpServer): void {
     "compare-books",
     {
       title: "Compare Books",
-      description:
-        "Side-by-side comparison of two books to help decide what to read.",
-      argsSchema: {
+      description: "Side-by-side comparison of two books to help decide what to read.",
+      argsSchema: z.object({
         book_id_1: z.string().describe("First book's Hardcover ID"),
         book_id_2: z.string().describe("Second book's Hardcover ID"),
-      },
+      }),
     },
     async ({ book_id_1, book_id_2 }) => ({
       messages: [

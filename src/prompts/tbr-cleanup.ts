@@ -1,12 +1,11 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 
 export function register(server: McpServer): void {
   server.registerPrompt(
     "tbr-cleanup",
     {
       title: "TBR Cleanup",
-      description:
-        "Audit your want-to-read list and get help prioritizing or trimming it.",
+      description: "Audit your want-to-read list and get help prioritizing or trimming it.",
     },
     async () => ({
       messages: [

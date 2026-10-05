@@ -1,16 +1,17 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { graphql } from "../client.js";
 import { formatUserBook } from "../format.js";
 import { GET_USER_BOOKS_QUERY } from "../tools/user-books.js";
 import { USER_BOOK_STATUS } from "../types.js";
 
-async function fetchShelf(
-  statusId: number,
-  limit: number
-): Promise<string> {
-  const meData = await graphql<{ me: Array<{ id: number }> }>(
-    `query { me { id } }`
-  );
+async function fetchShelf(statusId: number, limit: number): Promise<string> {
+  const meData = await graphql<{ me: Array<{ id: number }> }>(`
+    query {
+      me {
+        id
+      }
+    }
+  `);
   const myId = meData.me?.[0]?.id;
   if (!myId) return "Could not determine user ID.";
 
@@ -32,8 +33,7 @@ export function register(server: McpServer): void {
     "currently-reading",
     "hardcover://currently-reading",
     {
-      description:
-        "Books the authenticated user is currently reading.",
+      description: "Books the authenticated user is currently reading.",
       mimeType: "text/plain",
     },
     async (uri) => ({
@@ -51,8 +51,7 @@ export function register(server: McpServer): void {
     "want-to-read",
     "hardcover://want-to-read",
     {
-      description:
-        "Books on the authenticated user's want-to-read (TBR) shelf.",
+      description: "Books on the authenticated user's want-to-read (TBR) shelf.",
       mimeType: "text/plain",
     },
     async (uri) => ({

@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
@@ -20,10 +20,10 @@ export function register(server: McpServer): void {
       title: "Get Prompts",
       description:
         "Get community prompts (discussion questions). Optionally filter by book ID to get prompts related to a specific book.",
-      inputSchema: {
+      inputSchema: z.object({
         book_id: z.number().int().optional().describe("Filter prompts by book ID"),
         ...paginationSchema,
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -40,13 +40,12 @@ export function register(server: McpServer): void {
           prompts: Array<Record<string, unknown>>;
         }>(GET_PROMPTS_QUERY, { where, limit, offset });
 
-        const md =
-          data.prompts
-            .map(
-              (p) =>
-                `- **${p.question}** (${p.answers_count} answers, ${p.books_count} books) [ID: ${p.id}]`
-            )
-            .join("\n");
+        const md = data.prompts
+          .map(
+            (p) =>
+              `- **${p.question}** (${p.answers_count} answers, ${p.books_count} books) [ID: ${p.id}]`
+          )
+          .join("\n");
 
         return formatResult(
           { prompts: data.prompts },

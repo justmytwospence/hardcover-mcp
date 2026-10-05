@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
@@ -24,7 +24,7 @@ export function register(server: McpServer): void {
       title: "Get Tags",
       description:
         "Get tags, optionally filtered by category. Categories: 1=Genre, 2=General, 3=Content Warnings, 4=Mood, 37=Pace. Can also filter by book ID to see tags for a specific book.",
-      inputSchema: {
+      inputSchema: z.object({
         category_id: z
           .number()
           .int()
@@ -32,7 +32,7 @@ export function register(server: McpServer): void {
           .describe("Tag category: 1=Genre, 2=General, 3=Content Warnings, 4=Mood, 37=Pace"),
         book_id: z.number().int().optional().describe("Filter tags by book ID"),
         ...paginationSchema,
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,

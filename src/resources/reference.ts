@@ -1,9 +1,5 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  USER_BOOK_STATUS_LABELS,
-  TAG_CATEGORY_LABELS,
-  CONTRIBUTION_ROLES,
-} from "../types.js";
+import { McpServer } from "@modelcontextprotocol/server";
+import { USER_BOOK_STATUS_LABELS, TAG_CATEGORY_LABELS, CONTRIBUTION_ROLES } from "../types.js";
 
 export function register(server: McpServer): void {
   server.registerResource(

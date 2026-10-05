@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
@@ -31,7 +31,7 @@ export function register(server: McpServer): void {
       title: "Search Hardcover",
       description:
         "Universal full-text search across Hardcover using Typesense. Search for books, authors, characters, lists, prompts, publishers, series, or users. Returns matching IDs and search results. For detailed data, follow up with the appropriate get tool (e.g., hardcover_get_book).",
-      inputSchema: {
+      inputSchema: z.object({
         query: z.string().min(1).describe("Search query text"),
         type: z
           .enum(SEARCH_TYPES)
@@ -47,7 +47,7 @@ export function register(server: McpServer): void {
           .default(10)
           .describe("Results per page (1-50, default 10)"),
         page: z.number().int().min(1).default(1).describe("Page number (default 1)"),
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -78,8 +78,7 @@ export function register(server: McpServer): void {
         }
 
         const results = data.search.results as
-          | { hits?: Array<{ document?: Record<string, unknown> }> }
-          | undefined;
+          { hits?: Array<{ document?: Record<string, unknown> }> } | undefined;
 
         let md = `## Search Results for "${query}" (${type})\n\n`;
         if (results?.hits) {
@@ -94,10 +93,7 @@ export function register(server: McpServer): void {
           md += `Found ${data.search.ids.length} result(s). IDs: ${data.search.ids.join(", ")}\n`;
         }
 
-        return formatResult(
-          { ids: data.search.ids, results: data.search.results },
-          md
-        );
+        return formatResult({ ids: data.search.ids, results: data.search.results }, md);
       } catch (err) {
         return formatToolError(err);
       }

@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
@@ -47,7 +47,7 @@ export function register(server: McpServer): void {
       title: "Get My Profile",
       description:
         "Get the authenticated user's profile including username, bio, book count, and follower stats.",
-      inputSchema: {},
+      inputSchema: z.object({}),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -61,7 +61,12 @@ export function register(server: McpServer): void {
         const user = data.me?.[0];
         if (!user) {
           return {
-            content: [{ type: "text" as const, text: "Could not retrieve your profile. Check your API key." }],
+            content: [
+              {
+                type: "text" as const,
+                text: "Could not retrieve your profile. Check your API key.",
+              },
+            ],
           };
         }
         return formatResult(user, formatUser(user));
@@ -75,12 +80,11 @@ export function register(server: McpServer): void {
     "hardcover_get_user",
     {
       title: "Get User",
-      description:
-        "Get a user's public profile by their ID or username.",
-      inputSchema: {
+      description: "Get a user's public profile by their ID or username.",
+      inputSchema: z.object({
         user_id: z.number().int().optional().describe("Hardcover user ID"),
         username: z.string().optional().describe("Hardcover username"),
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -93,7 +97,10 @@ export function register(server: McpServer): void {
         if (!user_id && !username) {
           return {
             content: [
-              { type: "text" as const, text: "Error: Provide either user_id or username." },
+              {
+                type: "text" as const,
+                text: "Error: Provide either user_id or username.",
+              },
             ],
             isError: true,
           };
@@ -103,10 +110,9 @@ export function register(server: McpServer): void {
         if (user_id) where.id = { _eq: user_id };
         if (username) where.username = { _eq: username };
 
-        const data = await graphql<{ users: Array<Record<string, unknown>> }>(
-          GET_USER_QUERY,
-          { where }
-        );
+        const data = await graphql<{ users: Array<Record<string, unknown>> }>(GET_USER_QUERY, {
+          where,
+        });
         const user = data.users?.[0];
         if (!user) {
           return {

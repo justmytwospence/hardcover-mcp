@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
@@ -41,9 +41,9 @@ export function register(server: McpServer): void {
       title: "Get Book",
       description:
         "Get detailed information about a book by its Hardcover ID. Returns title, authors, description, pages, rating, tags, series, and editions.",
-      inputSchema: {
+      inputSchema: z.object({
         book_id: z.number().int().describe("The Hardcover book ID"),
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -53,13 +53,17 @@ export function register(server: McpServer): void {
     },
     async ({ book_id }) => {
       try {
-        const data = await graphql<{ books_by_pk: Record<string, unknown> }>(
-          GET_BOOK_QUERY,
-          { id: book_id }
-        );
+        const data = await graphql<{ books_by_pk: Record<string, unknown> }>(GET_BOOK_QUERY, {
+          id: book_id,
+        });
         if (!data.books_by_pk) {
           return {
-            content: [{ type: "text" as const, text: `No book found with ID ${book_id}.` }],
+            content: [
+              {
+                type: "text" as const,
+                text: `No book found with ID ${book_id}.`,
+              },
+            ],
           };
         }
         return formatResult(data.books_by_pk, formatBook(data.books_by_pk));
@@ -75,14 +79,14 @@ export function register(server: McpServer): void {
       title: "Find Books",
       description:
         "Query books with filters. Filter by title, author name, release year range, minimum rating, or tags. Results are ordered by rating by default.",
-      inputSchema: {
+      inputSchema: z.object({
         title: z.string().optional().describe("Filter by title (exact match via _eq)"),
         author_name: z.string().optional().describe("Filter by author name"),
         min_year: z.number().int().optional().describe("Minimum release year"),
         max_year: z.number().int().optional().describe("Maximum release year"),
         min_rating: z.number().min(0).max(5).optional().describe("Minimum rating (0-5)"),
         ...paginationSchema,
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -118,7 +122,10 @@ export function register(server: McpServer): void {
         const pagination = computePagination(total, data.books.length, offset);
         const md = data.books.map(formatBookSummary).join("\n") + formatPaginationNote(pagination);
 
-        return formatResult({ books: data.books, pagination }, md || "No books found matching the filters.");
+        return formatResult(
+          { books: data.books, pagination },
+          md || "No books found matching the filters."
+        );
       } catch (err) {
         return formatToolError(err);
       }
@@ -131,7 +138,7 @@ export function register(server: McpServer): void {
       title: "Search Books",
       description:
         "Full-text search for books using Hardcover's Typesense search engine. Better than find_books for natural language queries like 'fantasy dragons' or 'mystery thriller'.",
-      inputSchema: {
+      inputSchema: z.object({
         query: z.string().min(1).describe("Search query text"),
         per_page: z
           .number()
@@ -141,7 +148,7 @@ export function register(server: McpServer): void {
           .default(20)
           .describe("Results per page (1-50, default 20)"),
         page: z.number().int().min(1).default(1).describe("Page number (default 1)"),
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -164,7 +171,9 @@ export function register(server: McpServer): void {
         }>(searchQuery, { query, per_page, page });
 
         if (!data.search.ids?.length) {
-          return { content: [{ type: "text" as const, text: `No books found for "${query}".` }] };
+          return {
+            content: [{ type: "text" as const, text: `No books found for "${query}".` }],
+          };
         }
 
         // Fetch full book data for the IDs
@@ -176,10 +185,9 @@ export function register(server: McpServer): void {
             }
           }
         `;
-        const booksData = await graphql<{ books: Array<Record<string, unknown>> }>(
-          booksQuery,
-          { ids: data.search.ids }
-        );
+        const booksData = await graphql<{
+          books: Array<Record<string, unknown>>;
+        }>(booksQuery, { ids: data.search.ids });
 
         // Sort by original search order
         const idOrder = new Map(data.search.ids.map((id, i) => [id, i]));

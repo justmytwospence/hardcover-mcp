@@ -65,10 +65,7 @@ function getApiKey(): string {
   return key;
 }
 
-export async function graphql<T>(
-  query: string,
-  variables?: Record<string, unknown>
-): Promise<T> {
+export async function graphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
   consumeToken();
 
   const response = await fetch(API_URL, {
@@ -89,10 +86,7 @@ export async function graphql<T>(
         "AUTH_FAILED"
       );
     }
-    throw new HardcoverApiError(
-      `API request failed with status ${response.status}.`,
-      "HTTP_ERROR"
-    );
+    throw new HardcoverApiError(`API request failed with status ${response.status}.`, "HTTP_ERROR");
   }
 
   const body = (await response.json()) as {
@@ -102,18 +96,11 @@ export async function graphql<T>(
 
   if (body.errors && body.errors.length > 0) {
     const err = body.errors[0];
-    throw new HardcoverApiError(
-      err.message,
-      "GRAPHQL_ERROR",
-      err.path?.join(".")
-    );
+    throw new HardcoverApiError(err.message, "GRAPHQL_ERROR", err.path?.join("."));
   }
 
   if (!body.data) {
-    throw new HardcoverApiError(
-      "API returned an empty response.",
-      "EMPTY_RESPONSE"
-    );
+    throw new HardcoverApiError("API returned an empty response.", "EMPTY_RESPONSE");
   }
 
   return body.data;

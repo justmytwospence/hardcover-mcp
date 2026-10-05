@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
@@ -30,11 +30,10 @@ export function register(server: McpServer): void {
     "hardcover_get_series",
     {
       title: "Get Series",
-      description:
-        "Get a book series by ID, including all books in order with their positions.",
-      inputSchema: {
+      description: "Get a book series by ID, including all books in order with their positions.",
+      inputSchema: z.object({
         series_id: z.number().int().describe("The Hardcover series ID"),
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -44,13 +43,17 @@ export function register(server: McpServer): void {
     },
     async ({ series_id }) => {
       try {
-        const data = await graphql<{ series_by_pk: Record<string, unknown> }>(
-          GET_SERIES_QUERY,
-          { id: series_id }
-        );
+        const data = await graphql<{ series_by_pk: Record<string, unknown> }>(GET_SERIES_QUERY, {
+          id: series_id,
+        });
         if (!data.series_by_pk) {
           return {
-            content: [{ type: "text" as const, text: `No series found with ID ${series_id}.` }],
+            content: [
+              {
+                type: "text" as const,
+                text: `No series found with ID ${series_id}.`,
+              },
+            ],
           };
         }
         return formatResult(data.series_by_pk, formatSeries(data.series_by_pk));
@@ -66,10 +69,10 @@ export function register(server: McpServer): void {
       title: "Find Series",
       description:
         "Search for book series by name. Use hardcover_search with type 'series' for fuzzy/full-text search.",
-      inputSchema: {
+      inputSchema: z.object({
         name: z.string().optional().describe("Series name (exact match)"),
         ...paginationSchema,
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -86,18 +89,14 @@ export function register(server: McpServer): void {
           series: Array<Record<string, unknown>>;
         }>(FIND_SERIES_QUERY, { where, limit, offset });
 
-        const md =
-          data.series
-            .map(
-              (s) =>
-                `- **${s.name}** (${s.books_count} books${s.is_completed ? ", completed" : ""}) [ID: ${s.id}]`
-            )
-            .join("\n");
+        const md = data.series
+          .map(
+            (s) =>
+              `- **${s.name}** (${s.books_count} books${s.is_completed ? ", completed" : ""}) [ID: ${s.id}]`
+          )
+          .join("\n");
 
-        return formatResult(
-          { series: data.series },
-          md || "No series found."
-        );
+        return formatResult({ series: data.series }, md || "No series found.");
       } catch (err) {
         return formatToolError(err);
       }

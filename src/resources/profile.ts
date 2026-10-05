@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { graphql } from "../client.js";
 
 const GET_PROFILE_QUERY = `
@@ -15,8 +15,7 @@ export function register(server: McpServer): void {
     "profile",
     "hardcover://profile",
     {
-      description:
-        "The authenticated user's Hardcover profile with reading stats.",
+      description: "The authenticated user's Hardcover profile with reading stats.",
       mimeType: "text/plain",
     },
     async (uri) => {
@@ -28,7 +27,11 @@ export function register(server: McpServer): void {
       if (!user) {
         return {
           contents: [
-            { uri: uri.href, text: "Could not retrieve profile.", mimeType: "text/plain" },
+            {
+              uri: uri.href,
+              text: "Could not retrieve profile.",
+              mimeType: "text/plain",
+            },
           ],
         };
       }
@@ -42,9 +45,7 @@ export function register(server: McpServer): void {
       );
 
       return {
-        contents: [
-          { uri: uri.href, text: lines.join("\n"), mimeType: "text/plain" },
-        ],
+        contents: [{ uri: uri.href, text: lines.join("\n"), mimeType: "text/plain" }],
       };
     }
   );

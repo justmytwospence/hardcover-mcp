@@ -13,8 +13,7 @@ export function formatResult(
   const text = markdown ?? json;
   const truncated =
     text.length > CHARACTER_LIMIT
-      ? text.slice(0, CHARACTER_LIMIT) +
-        "\n\n_[Response truncated. Use limit/offset to paginate.]_"
+      ? text.slice(0, CHARACTER_LIMIT) + "\n\n_[Response truncated. Use limit/offset to paginate.]_"
       : text;
 
   return {
@@ -30,8 +29,7 @@ export function formatBook(book: Record<string, unknown>): string {
   lines.push("");
 
   const contributions = book.contributions as
-    | Array<{ author: { name: string; id: number } }>
-    | undefined;
+    Array<{ author: { name: string; id: number } }> | undefined;
   if (contributions?.length) {
     const authors = contributions.map((c) => c.author.name).join(", ");
     lines.push(`**Author(s):** ${authors}`);
@@ -40,12 +38,9 @@ export function formatBook(book: Record<string, unknown>): string {
   if (book.release_year) lines.push(`**Year:** ${book.release_year}`);
   if (book.pages) lines.push(`**Pages:** ${book.pages}`);
   if (book.rating) lines.push(`**Rating:** ${book.rating}/5`);
-  if (book.ratings_count)
-    lines.push(`**Ratings:** ${book.ratings_count}`);
-  if (book.reviews_count)
-    lines.push(`**Reviews:** ${book.reviews_count}`);
-  if (book.users_read_count)
-    lines.push(`**Readers:** ${book.users_read_count}`);
+  if (book.ratings_count) lines.push(`**Ratings:** ${book.ratings_count}`);
+  if (book.reviews_count) lines.push(`**Reviews:** ${book.reviews_count}`);
+  if (book.users_read_count) lines.push(`**Readers:** ${book.users_read_count}`);
   lines.push("");
 
   if (book.description) {
@@ -62,8 +57,7 @@ export function formatBook(book: Record<string, unknown>): string {
   if (taggings?.length) {
     const grouped: Record<string, string[]> = {};
     for (const t of taggings) {
-      const cat =
-        TAG_CATEGORY_LABELS[t.tag.tag_category_id] ?? "Other";
+      const cat = TAG_CATEGORY_LABELS[t.tag.tag_category_id] ?? "Other";
       if (!grouped[cat]) grouped[cat] = [];
       grouped[cat].push(t.tag.tag);
     }
@@ -74,13 +68,10 @@ export function formatBook(book: Record<string, unknown>): string {
   }
 
   const bookSeries = book.book_series as
-    | Array<{ series: { id: number; name: string }; position: string }>
-    | undefined;
+    Array<{ series: { id: number; name: string }; position: string }> | undefined;
   if (bookSeries?.length) {
     for (const bs of bookSeries) {
-      lines.push(
-        `**Series:** ${bs.series.name}${bs.position ? ` #${bs.position}` : ""}`
-      );
+      lines.push(`**Series:** ${bs.series.name}${bs.position ? ` #${bs.position}` : ""}`);
     }
   }
 
@@ -88,9 +79,7 @@ export function formatBook(book: Record<string, unknown>): string {
 }
 
 export function formatBookSummary(book: Record<string, unknown>): string {
-  const contributions = book.contributions as
-    | Array<{ author: { name: string } }>
-    | undefined;
+  const contributions = book.contributions as Array<{ author: { name: string } }> | undefined;
   const author = contributions?.[0]?.author.name ?? "Unknown";
   const rating = book.rating ? ` (${book.rating}/5)` : "";
   return `- **${book.title}** by ${author}${rating} [ID: ${book.id}]`;
@@ -118,11 +107,8 @@ export function formatSeries(series: Record<string, unknown>): string {
   lines.push(`# ${series.name}`);
   lines.push("");
   if (series.books_count) lines.push(`**Books:** ${series.books_count}`);
-  if (series.primary_books_count)
-    lines.push(`**Primary Books:** ${series.primary_books_count}`);
-  lines.push(
-    `**Completed:** ${(series.is_completed as boolean) ? "Yes" : "No"}`
-  );
+  if (series.primary_books_count) lines.push(`**Primary Books:** ${series.primary_books_count}`);
+  lines.push(`**Completed:** ${(series.is_completed as boolean) ? "Yes" : "No"}`);
   lines.push("");
   if (series.description) {
     lines.push(String(series.description));
@@ -169,8 +155,7 @@ export function formatList(list: Record<string, unknown>): string {
   if (list.description) lines.push(String(list.description));
   if (list.books_count) lines.push(`**Books:** ${list.books_count}`);
   if (list.likes_count) lines.push(`**Likes:** ${list.likes_count}`);
-  if (list.followers_count)
-    lines.push(`**Followers:** ${list.followers_count}`);
+  if (list.followers_count) lines.push(`**Followers:** ${list.followers_count}`);
   lines.push("");
 
   const listBooks = list.list_books as

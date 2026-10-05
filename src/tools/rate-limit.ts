@@ -1,6 +1,7 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { getRateLimitStatus } from "../client.js";
 import { formatResult } from "../format.js";
+import { z } from "zod";
 
 export const TOOL_COSTS: Record<string, number> = {
   hardcover_get_book: 1,
@@ -50,7 +51,7 @@ The Hardcover API allows 60 requests per minute. Each tool has an API cost:
 - Cost 2: search_books (search + fetch details), get_user_books (may fetch user ID), get_goals (may fetch user ID)
 
 Call this tool to check remaining budget before making many requests.`,
-      inputSchema: {},
+      inputSchema: z.object({}),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,

@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 export function register(server: McpServer): void {
@@ -8,18 +8,13 @@ export function register(server: McpServer): void {
       title: "Recommend Next Read",
       description:
         "Get a personalized book recommendation based on your library, reading history, and mood.",
-      argsSchema: {
+      argsSchema: z.object({
         mood: z
           .string()
           .optional()
-          .describe(
-            "Reading mood: light, challenging, quick, epic, comforting, adventurous"
-          ),
-        genre: z
-          .string()
-          .optional()
-          .describe("Preferred genre for this recommendation"),
-      },
+          .describe("Reading mood: light, challenging, quick, epic, comforting, adventurous"),
+        genre: z.string().optional().describe("Preferred genre for this recommendation"),
+      }),
     },
     async ({ mood, genre }) => {
       const parts = [

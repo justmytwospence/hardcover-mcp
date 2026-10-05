@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
@@ -33,9 +33,9 @@ export function register(server: McpServer): void {
       title: "Get Author",
       description:
         "Get detailed information about an author by ID, including biography, dates, and their top-rated books.",
-      inputSchema: {
+      inputSchema: z.object({
         author_id: z.number().int().describe("The Hardcover author ID"),
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -45,20 +45,31 @@ export function register(server: McpServer): void {
     },
     async ({ author_id }) => {
       try {
-        const data = await graphql<{ authors_by_pk: Record<string, unknown> }>(
-          GET_AUTHOR_QUERY,
-          { id: author_id }
-        );
+        const data = await graphql<{ authors_by_pk: Record<string, unknown> }>(GET_AUTHOR_QUERY, {
+          id: author_id,
+        });
         if (!data.authors_by_pk) {
           return {
-            content: [{ type: "text" as const, text: `No author found with ID ${author_id}.` }],
+            content: [
+              {
+                type: "text" as const,
+                text: `No author found with ID ${author_id}.`,
+              },
+            ],
           };
         }
 
         const author = data.authors_by_pk;
         let md = formatAuthor(author);
         const contributions = author.contributions as
-          | Array<{ book: { id: number; title: string; release_year?: number; rating?: number } }>
+          | Array<{
+              book: {
+                id: number;
+                title: string;
+                release_year?: number;
+                rating?: number;
+              };
+            }>
           | undefined;
         if (contributions?.length) {
           md += "## Books\n";
@@ -81,10 +92,10 @@ export function register(server: McpServer): void {
       title: "Find Authors",
       description:
         "Search for authors by name. Use hardcover_search with type 'author' for fuzzy/full-text search instead.",
-      inputSchema: {
+      inputSchema: z.object({
         name: z.string().optional().describe("Author name (exact match)"),
         ...paginationSchema,
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -101,15 +112,11 @@ export function register(server: McpServer): void {
           authors: Array<Record<string, unknown>>;
         }>(FIND_AUTHORS_QUERY, { where, limit, offset });
 
-        const md =
-          data.authors
-            .map((a) => `- **${a.name}** (${a.books_count ?? 0} books) [ID: ${a.id}]`)
-            .join("\n");
+        const md = data.authors
+          .map((a) => `- **${a.name}** (${a.books_count ?? 0} books) [ID: ${a.id}]`)
+          .join("\n");
 
-        return formatResult(
-          { authors: data.authors },
-          md || "No authors found."
-        );
+        return formatResult({ authors: data.authors }, md || "No authors found.");
       } catch (err) {
         return formatToolError(err);
       }

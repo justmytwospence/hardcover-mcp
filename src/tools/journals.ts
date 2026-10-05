@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
@@ -23,11 +23,11 @@ export function register(server: McpServer): void {
       title: "Get Reading Journals",
       description:
         "Get reading journal entries (notes, quotes, progress updates, status changes). Filter by user_book_id or user_id.",
-      inputSchema: {
+      inputSchema: z.object({
         user_book_id: z.number().int().optional().describe("Filter by user book ID"),
         user_id: z.number().int().optional().describe("Filter by user ID"),
         ...paginationSchema,
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -45,15 +45,14 @@ export function register(server: McpServer): void {
           reading_journals: Array<Record<string, unknown>>;
         }>(GET_JOURNALS_QUERY, { where, limit, offset });
 
-        const md =
-          data.reading_journals
-            .map((j) => {
-              const book = j.book as Record<string, unknown> | undefined;
-              const title = book?.title ?? "Unknown";
-              const entry = j.entry ? `\n  > ${j.entry}` : "";
-              return `- **${title}** [${j.event}] ${j.action_at}${entry}`;
-            })
-            .join("\n");
+        const md = data.reading_journals
+          .map((j) => {
+            const book = j.book as Record<string, unknown> | undefined;
+            const title = book?.title ?? "Unknown";
+            const entry = j.entry ? `\n  > ${j.entry}` : "";
+            return `- **${title}** [${j.event}] ${j.action_at}${entry}`;
+          })
+          .join("\n");
 
         return formatResult(
           { journals: data.reading_journals },

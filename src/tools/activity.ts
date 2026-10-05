@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
@@ -22,10 +22,10 @@ export function register(server: McpServer): void {
       title: "Get Activity Feed",
       description:
         "Get activity feed entries. Optionally filter by user ID. Events include book status changes, ratings, reviews, goal updates, and list changes.",
-      inputSchema: {
+      inputSchema: z.object({
         user_id: z.number().int().optional().describe("Filter by user ID"),
         ...paginationSchema,
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -42,24 +42,23 @@ export function register(server: McpServer): void {
           activities: Array<Record<string, unknown>>;
         }>(GET_ACTIVITY_QUERY, { where, limit, offset });
 
-        const md =
-          data.activities
-            .map((a) => {
-              const user = a.user as Record<string, unknown> | undefined;
-              const activityData = a.data as Record<string, unknown> | undefined;
-              const bookTitle = activityData?.book_title ?? activityData?.title ?? "";
-              const statusId = activityData?.statusId as number | undefined;
-              const status = statusId ? USER_BOOK_STATUS_LABELS[statusId] : "";
-              const rating = activityData?.rating as number | undefined;
+        const md = data.activities
+          .map((a) => {
+            const user = a.user as Record<string, unknown> | undefined;
+            const activityData = a.data as Record<string, unknown> | undefined;
+            const bookTitle = activityData?.book_title ?? activityData?.title ?? "";
+            const statusId = activityData?.statusId as number | undefined;
+            const status = statusId ? USER_BOOK_STATUS_LABELS[statusId] : "";
+            const rating = activityData?.rating as number | undefined;
 
-              let detail = String(a.event);
-              if (bookTitle) detail += `: ${bookTitle}`;
-              if (status) detail += ` (${status})`;
-              if (rating) detail += ` - ${rating}/5`;
+            let detail = String(a.event);
+            if (bookTitle) detail += `: ${bookTitle}`;
+            if (status) detail += ` (${status})`;
+            if (rating) detail += ` - ${rating}/5`;
 
-              return `- @${user?.username ?? "?"} ${detail} — ${a.created_at}`;
-            })
-            .join("\n");
+            return `- @${user?.username ?? "?"} ${detail} — ${a.created_at}`;
+          })
+          .join("\n");
 
         return formatResult(
           { activities: data.activities },

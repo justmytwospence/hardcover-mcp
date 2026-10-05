@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 export function register(server: McpServer): void {
@@ -6,14 +6,10 @@ export function register(server: McpServer): void {
     "reading-year-in-review",
     {
       title: "Reading Year in Review",
-      description:
-        "Generate a comprehensive summary of your reading for a given year.",
-      argsSchema: {
-        year: z
-          .string()
-          .optional()
-          .describe("Year to review (defaults to current year)"),
-      },
+      description: "Generate a comprehensive summary of your reading for a given year.",
+      argsSchema: z.object({
+        year: z.string().optional().describe("Year to review (defaults to current year)"),
+      }),
     },
     async ({ year }) => {
       const targetYear = year || String(new Date().getFullYear());

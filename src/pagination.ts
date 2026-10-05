@@ -8,12 +8,7 @@ export const paginationSchema = {
     .max(100)
     .default(20)
     .describe("Maximum results to return (1-100, default 20)"),
-  offset: z
-    .number()
-    .int()
-    .min(0)
-    .default(0)
-    .describe("Number of results to skip for pagination"),
+  offset: z.number().int().min(0).default(0).describe("Number of results to skip for pagination"),
 };
 
 export interface PaginationMeta {
@@ -24,11 +19,7 @@ export interface PaginationMeta {
   next_offset?: number;
 }
 
-export function computePagination(
-  total: number,
-  count: number,
-  offset: number
-): PaginationMeta {
+export function computePagination(total: number, count: number, offset: number): PaginationMeta {
   const hasMore = total > offset + count;
   return {
     total_count: total,

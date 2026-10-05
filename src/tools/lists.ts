@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
@@ -40,9 +40,9 @@ export function register(server: McpServer): void {
     {
       title: "Get List",
       description: "Get a list by ID including its books.",
-      inputSchema: {
+      inputSchema: z.object({
         list_id: z.number().int().describe("The Hardcover list ID"),
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -52,13 +52,17 @@ export function register(server: McpServer): void {
     },
     async ({ list_id }) => {
       try {
-        const data = await graphql<{ lists_by_pk: Record<string, unknown> }>(
-          GET_LIST_QUERY,
-          { id: list_id }
-        );
+        const data = await graphql<{ lists_by_pk: Record<string, unknown> }>(GET_LIST_QUERY, {
+          id: list_id,
+        });
         if (!data.lists_by_pk) {
           return {
-            content: [{ type: "text" as const, text: `No list found with ID ${list_id}.` }],
+            content: [
+              {
+                type: "text" as const,
+                text: `No list found with ID ${list_id}.`,
+              },
+            ],
           };
         }
         return formatResult(data.lists_by_pk, formatList(data.lists_by_pk));
@@ -73,11 +77,11 @@ export function register(server: McpServer): void {
     {
       title: "Find Lists",
       description: "Search for lists. Optionally filter by user ID or public visibility.",
-      inputSchema: {
+      inputSchema: z.object({
         user_id: z.number().int().optional().describe("Filter by list owner's user ID"),
         public_only: z.boolean().default(false).describe("Only show public lists"),
         ...paginationSchema,
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -122,7 +126,7 @@ export function register(server: McpServer): void {
       title: "Create List",
       description:
         "Create a new list. Privacy: 1=Public, 2=Followers only, 3=Private (default: Public).",
-      inputSchema: {
+      inputSchema: z.object({
         name: z.string().min(1).describe("List name"),
         description: z.string().optional().describe("List description"),
         privacy_setting_id: z
@@ -132,7 +136,7 @@ export function register(server: McpServer): void {
           .max(3)
           .default(1)
           .describe("Privacy: 1=Public, 2=Followers, 3=Private"),
-      },
+      }),
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -150,25 +154,22 @@ export function register(server: McpServer): void {
             }
           }
         `;
-        const data = await graphql<{ insert_list: Record<string, unknown> }>(
-          mutation,
-          {
-            object: {
-              name,
-              ...(description ? { description } : {}),
-              privacy_setting_id,
-            },
-          }
-        );
+        const data = await graphql<{ insert_list: Record<string, unknown> }>(mutation, {
+          object: {
+            name,
+            ...(description ? { description } : {}),
+            privacy_setting_id,
+          },
+        });
         const result = data.insert_list;
         const errors = result.errors as string[] | undefined;
         if (errors?.length) {
-          return { content: [{ type: "text" as const, text: `Error: ${errors.join(", ")}` }], isError: true };
+          return {
+            content: [{ type: "text" as const, text: `Error: ${errors.join(", ")}` }],
+            isError: true,
+          };
         }
-        return formatResult(
-          result.list,
-          `Created list **${name}** [ID: ${result.id}]`
-        );
+        return formatResult(result.list, `Created list **${name}** [ID: ${result.id}]`);
       } catch (err) {
         return formatToolError(err);
       }
@@ -180,7 +181,7 @@ export function register(server: McpServer): void {
     {
       title: "Update List",
       description: "Update a list's name, description, or privacy setting. You must own the list.",
-      inputSchema: {
+      inputSchema: z.object({
         list_id: z.number().int().describe("The list ID to update"),
         name: z.string().optional().describe("New list name"),
         description: z.string().optional().describe("New description"),
@@ -191,7 +192,7 @@ export function register(server: McpServer): void {
           .max(3)
           .optional()
           .describe("Privacy: 1=Public, 2=Followers, 3=Private"),
-      },
+      }),
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -209,7 +210,10 @@ export function register(server: McpServer): void {
         if (Object.keys(object).length === 0) {
           return {
             content: [
-              { type: "text" as const, text: "Error: Provide at least one field to update." },
+              {
+                type: "text" as const,
+                text: "Error: Provide at least one field to update.",
+              },
             ],
             isError: true,
           };
@@ -223,20 +227,20 @@ export function register(server: McpServer): void {
             }
           }
         `;
-        const data = await graphql<{ update_list: Record<string, unknown> }>(
-          mutation,
-          { id: list_id, object }
-        );
+        const data = await graphql<{ update_list: Record<string, unknown> }>(mutation, {
+          id: list_id,
+          object,
+        });
         const result = data.update_list;
         const errors = result.errors as string[] | undefined;
         if (errors?.length) {
-          return { content: [{ type: "text" as const, text: `Error: ${errors.join(", ")}` }], isError: true };
+          return {
+            content: [{ type: "text" as const, text: `Error: ${errors.join(", ")}` }],
+            isError: true,
+          };
         }
         const list = result.list as Record<string, unknown>;
-        return formatResult(
-          list,
-          `Updated list **${list?.name}** [ID: ${list_id}]`
-        );
+        return formatResult(list, `Updated list **${list?.name}** [ID: ${list_id}]`);
       } catch (err) {
         return formatToolError(err);
       }
@@ -248,9 +252,9 @@ export function register(server: McpServer): void {
     {
       title: "Delete List",
       description: "Permanently delete a list. This is irreversible. You must own the list.",
-      inputSchema: {
+      inputSchema: z.object({
         list_id: z.number().int().describe("The list ID to delete"),
-      },
+      }),
       annotations: {
         readOnlyHint: false,
         destructiveHint: true,
@@ -265,7 +269,9 @@ export function register(server: McpServer): void {
             delete_list(id: $id) { success }
           }
         `;
-        await graphql<{ delete_list: { success: boolean } }>(mutation, { id: list_id });
+        await graphql<{ delete_list: { success: boolean } }>(mutation, {
+          id: list_id,
+        });
         return formatResult({ deleted: list_id }, `Deleted list ${list_id}.`);
       } catch (err) {
         return formatToolError(err);
@@ -278,11 +284,11 @@ export function register(server: McpServer): void {
     {
       title: "Add Book to List",
       description: "Add a book to a list at an optional position.",
-      inputSchema: {
+      inputSchema: z.object({
         list_id: z.number().int().describe("The list ID"),
         book_id: z.number().int().describe("The book ID to add"),
         position: z.number().int().optional().describe("Position in the list (optional)"),
-      },
+      }),
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -303,10 +309,9 @@ export function register(server: McpServer): void {
         const object: Record<string, unknown> = { list_id, book_id };
         if (position !== undefined) object.position = position;
 
-        const data = await graphql<{ insert_list_book: Record<string, unknown> }>(
-          mutation,
-          { object }
-        );
+        const data = await graphql<{
+          insert_list_book: Record<string, unknown>;
+        }>(mutation, { object });
         const result = data.insert_list_book;
         const lb = result.list_book as Record<string, unknown>;
         const book = lb?.book as Record<string, unknown>;
@@ -326,9 +331,9 @@ export function register(server: McpServer): void {
       title: "Remove Book from List",
       description:
         "Remove a book from a list. Use hardcover_get_list to find the list_book_id first.",
-      inputSchema: {
+      inputSchema: z.object({
         list_book_id: z.number().int().describe("The list book ID (from hardcover_get_list)"),
-      },
+      }),
       annotations: {
         readOnlyHint: false,
         destructiveHint: true,
@@ -343,7 +348,9 @@ export function register(server: McpServer): void {
             delete_list_book(id: $id) { id list_id }
           }
         `;
-        await graphql<{ delete_list_book: { id: number; list_id: number } }>(mutation, { id: list_book_id });
+        await graphql<{ delete_list_book: { id: number; list_id: number } }>(mutation, {
+          id: list_book_id,
+        });
         return formatResult(
           { deleted: list_book_id },
           `Removed list book ${list_book_id} from list.`
@@ -359,9 +366,9 @@ export function register(server: McpServer): void {
     {
       title: "Follow List",
       description: "Follow a list to see updates.",
-      inputSchema: {
+      inputSchema: z.object({
         list_id: z.number().int().describe("The list ID to follow"),
-      },
+      }),
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -376,7 +383,9 @@ export function register(server: McpServer): void {
             upsert_followed_list(list_id: $list_id) { id errors }
           }
         `;
-        await graphql<{ upsert_followed_list: { id: number; errors: string[] | null } }>(mutation, { list_id });
+        await graphql<{
+          upsert_followed_list: { id: number; errors: string[] | null };
+        }>(mutation, { list_id });
         return formatResult({ followed: list_id }, `Now following list ${list_id}.`);
       } catch (err) {
         return formatToolError(err);
@@ -389,9 +398,9 @@ export function register(server: McpServer): void {
     {
       title: "Unfollow List",
       description: "Stop following a list.",
-      inputSchema: {
+      inputSchema: z.object({
         list_id: z.number().int().describe("The list ID to unfollow"),
-      },
+      }),
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,

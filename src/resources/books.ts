@@ -1,7 +1,4 @@
-import {
-  McpServer,
-  ResourceTemplate,
-} from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/server";
 import { graphql } from "../client.js";
 import { formatBook } from "../format.js";
 import { GET_BOOK_QUERY } from "../tools/books.js";
@@ -18,9 +15,7 @@ export function register(server: McpServer): void {
       const bookId = parseInt(String(variables.book_id), 10);
       if (isNaN(bookId)) {
         return {
-          contents: [
-            { uri: uri.href, text: "Invalid book ID.", mimeType: "text/plain" },
-          ],
+          contents: [{ uri: uri.href, text: "Invalid book ID.", mimeType: "text/plain" }],
         };
       }
 

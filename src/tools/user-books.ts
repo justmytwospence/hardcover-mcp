@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
@@ -52,7 +52,7 @@ export function register(server: McpServer): void {
     {
       title: "Get User Books",
       description: `Get books from a user's library. Filter by status: 1=Want to Read, 2=Currently Reading, 3=Read, 4=Paused, 5=Did Not Finish, 6=Ignored. If no user_id provided, returns the authenticated user's library.`,
-      inputSchema: {
+      inputSchema: z.object({
         user_id: z.number().int().optional().describe("User ID (defaults to authenticated user)"),
         status_id: z
           .number()
@@ -60,9 +60,11 @@ export function register(server: McpServer): void {
           .min(1)
           .max(6)
           .optional()
-          .describe("Filter by status: 1=Want to Read, 2=Reading, 3=Read, 4=Paused, 5=DNF, 6=Ignored"),
+          .describe(
+            "Filter by status: 1=Want to Read, 2=Reading, 3=Read, 4=Paused, 5=DNF, 6=Ignored"
+          ),
         ...paginationSchema,
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -77,13 +79,22 @@ export function register(server: McpServer): void {
           where.user_id = { _eq: user_id };
         } else {
           // Get authenticated user's ID
-          const meData = await graphql<{ me: Array<{ id: number }> }>(
-            `query { me { id } }`
-          );
+          const meData = await graphql<{ me: Array<{ id: number }> }>(`
+            query {
+              me {
+                id
+              }
+            }
+          `);
           const myId = meData.me?.[0]?.id;
           if (!myId) {
             return {
-              content: [{ type: "text" as const, text: "Could not determine your user ID." }],
+              content: [
+                {
+                  type: "text" as const,
+                  text: "Could not determine your user ID.",
+                },
+              ],
               isError: true,
             };
           }
@@ -101,9 +112,7 @@ export function register(server: McpServer): void {
         });
 
         const statusLabel = status_id ? USER_BOOK_STATUS_LABELS[status_id] : "All";
-        const md =
-          `## ${statusLabel} Books\n\n` +
-          data.user_books.map(formatUserBook).join("\n");
+        const md = `## ${statusLabel} Books\n\n` + data.user_books.map(formatUserBook).join("\n");
 
         return formatResult(
           { user_books: data.user_books },
@@ -121,7 +130,7 @@ export function register(server: McpServer): void {
       title: "Add Book to Library",
       description:
         "Add a book to your library with a reading status. Status: 1=Want to Read, 2=Currently Reading, 3=Read, 4=Paused, 5=Did Not Finish, 6=Ignored.",
-      inputSchema: {
+      inputSchema: z.object({
         book_id: z.number().int().describe("The Hardcover book ID to add"),
         status_id: z
           .number()
@@ -129,7 +138,7 @@ export function register(server: McpServer): void {
           .min(1)
           .max(6)
           .describe("Status: 1=Want to Read, 2=Reading, 3=Read, 4=Paused, 5=DNF, 6=Ignored"),
-      },
+      }),
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -147,7 +156,10 @@ export function register(server: McpServer): void {
 
         const result = data.insert_user_book;
         if (result.error) {
-          return { content: [{ type: "text" as const, text: `Error: ${result.error}` }], isError: true };
+          return {
+            content: [{ type: "text" as const, text: `Error: ${result.error}` }],
+            isError: true,
+          };
         }
         const ub = result.user_book as Record<string, unknown>;
         const book = ub?.book as Record<string, unknown>;
@@ -168,7 +180,7 @@ export function register(server: McpServer): void {
       title: "Update User Book",
       description:
         "Update a book in your library. Change status, rating (0-5, supports halves like 3.5), or review text. Use hardcover_get_user_books to find the user_book_id first.",
-      inputSchema: {
+      inputSchema: z.object({
         user_book_id: z.number().int().describe("The user book ID (from hardcover_get_user_books)"),
         status_id: z
           .number()
@@ -184,7 +196,7 @@ export function register(server: McpServer): void {
           .optional()
           .describe("Rating from 0-5 (supports halves like 3.5, 0 to clear)"),
         review: z.string().optional().describe("Review text"),
-      },
+      }),
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -217,7 +229,10 @@ export function register(server: McpServer): void {
 
         const result = data.update_user_book;
         if (result.error) {
-          return { content: [{ type: "text" as const, text: `Error: ${result.error}` }], isError: true };
+          return {
+            content: [{ type: "text" as const, text: `Error: ${result.error}` }],
+            isError: true,
+          };
         }
         const ub = result.user_book as Record<string, unknown>;
         const book = ub?.book as Record<string, unknown>;
@@ -239,9 +254,9 @@ export function register(server: McpServer): void {
       title: "Remove Book from Library",
       description:
         "Remove a book from your library. This is irreversible. Use hardcover_get_user_books to find the user_book_id.",
-      inputSchema: {
+      inputSchema: z.object({
         user_book_id: z.number().int().describe("The user book ID to remove"),
-      },
+      }),
       annotations: {
         readOnlyHint: false,
         destructiveHint: true,
@@ -251,10 +266,9 @@ export function register(server: McpServer): void {
     },
     async ({ user_book_id }) => {
       try {
-        await graphql<{ delete_user_book: { id: number } }>(
-          REMOVE_USER_BOOK_MUTATION,
-          { id: user_book_id }
-        );
+        await graphql<{ delete_user_book: { id: number } }>(REMOVE_USER_BOOK_MUTATION, {
+          id: user_book_id,
+        });
         return formatResult(
           { deleted: user_book_id },
           `Removed user book ${user_book_id} from your library.`

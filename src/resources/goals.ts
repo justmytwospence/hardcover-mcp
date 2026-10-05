@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { graphql } from "../client.js";
 import { GET_GOALS_QUERY } from "../tools/goals.js";
 
@@ -7,19 +7,26 @@ export function register(server: McpServer): void {
     "goals",
     "hardcover://goals",
     {
-      description:
-        "The authenticated user's reading goals for the current year.",
+      description: "The authenticated user's reading goals for the current year.",
       mimeType: "text/plain",
     },
     async (uri) => {
-      const meData = await graphql<{ me: Array<{ id: number }> }>(
-        `query { me { id } }`
-      );
+      const meData = await graphql<{ me: Array<{ id: number }> }>(`
+        query {
+          me {
+            id
+          }
+        }
+      `);
       const myId = meData.me?.[0]?.id;
       if (!myId) {
         return {
           contents: [
-            { uri: uri.href, text: "Could not determine user ID.", mimeType: "text/plain" },
+            {
+              uri: uri.href,
+              text: "Could not determine user ID.",
+              mimeType: "text/plain",
+            },
           ],
         };
       }
@@ -38,7 +45,11 @@ export function register(server: McpServer): void {
       if (!data.goals.length) {
         return {
           contents: [
-            { uri: uri.href, text: `No reading goals found for ${year}.`, mimeType: "text/plain" },
+            {
+              uri: uri.href,
+              text: `No reading goals found for ${year}.`,
+              mimeType: "text/plain",
+            },
           ],
         };
       }

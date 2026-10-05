@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
@@ -20,11 +20,11 @@ export function register(server: McpServer): void {
       title: "Get Characters",
       description:
         "Get fictional characters, optionally filtered by book. Returns character name, biography, and book count.",
-      inputSchema: {
+      inputSchema: z.object({
         book_id: z.number().int().optional().describe("Filter characters by book ID"),
         name: z.string().optional().describe("Filter by character name (exact match)"),
         ...paginationSchema,
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -42,15 +42,14 @@ export function register(server: McpServer): void {
           characters: Array<Record<string, unknown>>;
         }>(GET_CHARACTERS_QUERY, { where, limit, offset });
 
-        const md =
-          data.characters
-            .map((c) => {
-              const bio = c.biography
-                ? ` — ${String(c.biography).slice(0, 100)}${String(c.biography).length > 100 ? "..." : ""}`
-                : "";
-              return `- **${c.name}** (${c.books_count ?? 0} books)${bio} [ID: ${c.id}]`;
-            })
-            .join("\n");
+        const md = data.characters
+          .map((c) => {
+            const bio = c.biography
+              ? ` — ${String(c.biography).slice(0, 100)}${String(c.biography).length > 100 ? "..." : ""}`
+              : "";
+            return `- **${c.name}** (${c.books_count ?? 0} books)${bio} [ID: ${c.id}]`;
+          })
+          .join("\n");
 
         return formatResult(
           { characters: data.characters },

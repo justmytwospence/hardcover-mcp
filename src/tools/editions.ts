@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
@@ -25,13 +25,13 @@ export function register(server: McpServer): void {
       title: "Find Editions",
       description:
         "Find editions of a book. Filter by book ID, ISBN-13, ISBN-10, or ASIN. Returns edition details including format, publisher, and page count.",
-      inputSchema: {
+      inputSchema: z.object({
         book_id: z.number().int().optional().describe("Filter by Hardcover book ID"),
         isbn_13: z.string().optional().describe("Filter by ISBN-13"),
         isbn_10: z.string().optional().describe("Filter by ISBN-10"),
         asin: z.string().optional().describe("Filter by Amazon ASIN"),
         ...paginationSchema,
-      },
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -65,10 +65,7 @@ export function register(server: McpServer): void {
 
         const md = data.editions.map(formatEdition).join("\n");
 
-        return formatResult(
-          { editions: data.editions },
-          md || "No editions found."
-        );
+        return formatResult({ editions: data.editions }, md || "No editions found.");
       } catch (err) {
         return formatToolError(err);
       }
