@@ -1,0 +1,13 @@
+# Self-host hardcover-mcp: `cp .env.example .env`, fill it in, `docker compose up -d`.
+# The MCP endpoint is then http://<host>:8000/mcp (Streamable HTTP).
+services:
+  hardcover-mcp:
+    image: ghcr.io/justmytwospence/hardcover-mcp:2
+    restart: unless-stopped
+    environment:
+      HARDCOVER_API_KEY: ${HARDCOVER_API_KEY:?set HARDCOVER_API_KEY in .env}
+      # Hostnames clients use to reach the server, e.g. behind a reverse proxy.
+      # Requests naming any other Host are refused (DNS-rebinding protection).
+      MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-}
+    ports:
+      - "8000:8000"

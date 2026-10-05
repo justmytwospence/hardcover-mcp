@@ -2,31 +2,60 @@
 
 An MCP server for the [Hardcover](https://hardcover.app) book tracking API. Provides tools, resources, and prompts for searching books, managing your library, creating lists, and more.
 
-## Setup
+## Run it
 
-1. Get your API key from your [Hardcover account settings](https://hardcover.app/account/api)
+You need an API key from your [Hardcover account settings](https://hardcover.app/account/api)
+(the value includes the `Bearer ` prefix).
 
-2. Install globally:
+### As a service (Docker)
 
 ```bash
-npm install -g .
+cp .env.example .env   # fill in HARDCOVER_API_KEY
+docker compose up -d
 ```
 
-3. Add to your Claude Code config (`~/.claude.json` for user scope, or `.mcp.json` for project scope):
+The server speaks [Streamable HTTP](https://modelcontextprotocol.io/specification/2026-07-28)
+at `http://<host>:8000/mcp` (also at `/`), with a health check at `/health`. It serves both
+2026-07-28 clients and older, session-based ones. Point any MCP client at that URL:
+
+```json
+{
+  "mcpServers": {
+    "hardcover": { "type": "http", "url": "http://localhost:8000/mcp" }
+  }
+}
+```
+
+Behind a reverse proxy, set `MCP_ALLOWED_HOSTS` to the public hostname(s); requests naming
+any other `Host` are refused.
+
+### Over stdio (local)
+
+```bash
+npm install && npm run build
+```
 
 ```json
 {
   "mcpServers": {
     "hardcover": {
       "type": "stdio",
-      "command": "hardcover-mcp-server",
-      "env": {
-        "HARDCOVER_API_KEY": "Bearer <your-api-key>"
-      }
+      "command": "node",
+      "args": ["/path/to/hardcover-mcp/dist/index.js"],
+      "env": { "HARDCOVER_API_KEY": "Bearer <your-api-key>" }
     }
   }
 }
 ```
+
+### Configuration
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `HARDCOVER_API_KEY` | (required) | Hardcover API key, `Bearer ...` |
+| `MCP_TRANSPORT` | `stdio` (`http` in the image) | `stdio` or `http` |
+| `PORT` | `8000` | HTTP port |
+| `MCP_ALLOWED_HOSTS` | (any) | Comma-separated hostnames allowed in the `Host` header |
 
 ## Tools
 
@@ -124,6 +153,10 @@ Prompts are reusable templates for common workflows. They guide the LLM to use t
 
 ```bash
 npm install
-npm run dev    # watch mode
+npm run dev    # watch mode (stdio)
 npm run build  # compile
+npm run format # prettier
 ```
+
+Releases: push a `vX.Y.Z` tag and the `release` workflow publishes
+`ghcr.io/justmytwospence/hardcover-mcp:X.Y.Z` (plus `:X.Y` and `:X`) for amd64 and arm64.
