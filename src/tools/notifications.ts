@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
 import { formatResult } from "../format.js";
-import { paginationSchema } from "../pagination.js";
+import { paginationSchema, computePage } from "../pagination.js";
 import { z } from "zod";
 
 const GET_NOTIFICATIONS_QUERY = `
@@ -47,7 +47,10 @@ export function register(server: McpServer): void {
           .join("\n");
 
         return formatResult(
-          { notifications: data.notifications },
+          {
+            notifications: data.notifications,
+            pagination: computePage(data.notifications.length, limit, offset),
+          },
           data.notifications.length ? md : "No notifications."
         );
       } catch (err) {

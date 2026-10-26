@@ -3,7 +3,7 @@ import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
 import { formatResult } from "../format.js";
-import { paginationSchema } from "../pagination.js";
+import { paginationSchema, computePage } from "../pagination.js";
 
 const GET_JOURNALS_QUERY = `
   query GetJournals($where: reading_journals_bool_exp, $limit: Int!, $offset: Int!) {
@@ -24,8 +24,20 @@ export function register(server: McpServer): void {
       description:
         "Get reading journal entries (notes, quotes, progress updates, status changes). Filter by user_book_id or user_id.",
       inputSchema: z.object({
-        user_book_id: z.number().int().optional().describe("Filter by user book ID"),
-        user_id: z.number().int().optional().describe("Filter by user ID"),
+        user_book_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .optional()
+          .describe("Filter by user book ID"),
+        user_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .optional()
+          .describe("Filter by user ID"),
         ...paginationSchema,
       }),
       annotations: {
@@ -55,7 +67,10 @@ export function register(server: McpServer): void {
           .join("\n");
 
         return formatResult(
-          { journals: data.reading_journals },
+          {
+            journals: data.reading_journals,
+            pagination: computePage(data.reading_journals.length, limit, offset),
+          },
           data.reading_journals.length ? md : "No journal entries found."
         );
       } catch (err) {

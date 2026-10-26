@@ -6,7 +6,7 @@ import { formatResult } from "../format.js";
 
 export const GET_GOALS_QUERY = `
   query GetGoals($where: goals_bool_exp) {
-    goals(where: $where, order_by: { start_date: desc }) {
+    goals(where: $where, order_by: { start_date: desc }, limit: 100) {
       id metric goal progress state
       start_date end_date archived
       conditions
@@ -20,9 +20,15 @@ export function register(server: McpServer): void {
     {
       title: "Get Reading Goals",
       description:
-        "Get reading goals for a user. Goals track books or pages read with a target, progress, and state (active/completed/failed).",
+        "Get up to 100 reading goals for a user (not a complete history). Goals track books or pages read with a target, progress, and state (active/completed/failed).",
       inputSchema: z.object({
-        user_id: z.number().int().optional().describe("User ID (defaults to authenticated user)"),
+        user_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .optional()
+          .describe("User ID (defaults to authenticated user)"),
         year: z.number().int().optional().describe("Filter by year (e.g. 2025)"),
       }),
       annotations: {
@@ -47,7 +53,8 @@ export function register(server: McpServer): void {
             }
           `);
           const myId = meData.me?.[0]?.id;
-          if (myId) where.user_id = { _eq: myId };
+          if (!myId) throw new Error("Could not determine your user ID; no goals query sent.");
+          where.user_id = { _eq: myId };
         }
 
         if (year) {
@@ -68,7 +75,10 @@ export function register(server: McpServer): void {
           })
           .join("\n");
 
-        return formatResult({ goals: data.goals }, data.goals.length ? md : "No goals found.");
+        return formatResult(
+          { user_id: (where.user_id as { _eq: number })._eq, goals: data.goals },
+          data.goals.length ? md : "No goals found."
+        );
       } catch (err) {
         return formatToolError(err);
       }

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
 import { formatResult, formatEdition } from "../format.js";
-import { paginationSchema } from "../pagination.js";
+import { paginationSchema, computePage } from "../pagination.js";
 
 const FIND_EDITIONS_QUERY = `
   query FindEditions($where: editions_bool_exp, $limit: Int!, $offset: Int!) {
@@ -26,7 +26,13 @@ export function register(server: McpServer): void {
       description:
         "Find editions of a book. Filter by book ID, ISBN-13, ISBN-10, or ASIN. Returns edition details including format, publisher, and page count.",
       inputSchema: z.object({
-        book_id: z.number().int().optional().describe("Filter by Hardcover book ID"),
+        book_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .optional()
+          .describe("Filter by Hardcover book ID"),
         isbn_13: z.string().optional().describe("Filter by ISBN-13"),
         isbn_10: z.string().optional().describe("Filter by ISBN-10"),
         asin: z.string().optional().describe("Filter by Amazon ASIN"),
@@ -65,7 +71,10 @@ export function register(server: McpServer): void {
 
         const md = data.editions.map(formatEdition).join("\n");
 
-        return formatResult({ editions: data.editions }, md || "No editions found.");
+        return formatResult(
+          { editions: data.editions, pagination: computePage(data.editions.length, limit, offset) },
+          md || "No editions found."
+        );
       } catch (err) {
         return formatToolError(err);
       }

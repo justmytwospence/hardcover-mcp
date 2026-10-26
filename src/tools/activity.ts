@@ -3,7 +3,7 @@ import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
 import { formatResult } from "../format.js";
-import { paginationSchema } from "../pagination.js";
+import { paginationSchema, computePage } from "../pagination.js";
 import { USER_BOOK_STATUS_LABELS } from "../types.js";
 
 const GET_ACTIVITY_QUERY = `
@@ -23,7 +23,13 @@ export function register(server: McpServer): void {
       description:
         "Get activity feed entries. Optionally filter by user ID. Events include book status changes, ratings, reviews, goal updates, and list changes.",
       inputSchema: z.object({
-        user_id: z.number().int().optional().describe("Filter by user ID"),
+        user_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .optional()
+          .describe("Filter by user ID"),
         ...paginationSchema,
       }),
       annotations: {
@@ -61,7 +67,10 @@ export function register(server: McpServer): void {
           .join("\n");
 
         return formatResult(
-          { activities: data.activities },
+          {
+            activities: data.activities,
+            pagination: computePage(data.activities.length, limit, offset),
+          },
           data.activities.length ? md : "No activity found."
         );
       } catch (err) {

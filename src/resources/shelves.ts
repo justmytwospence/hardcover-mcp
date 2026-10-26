@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { graphql } from "../client.js";
-import { formatUserBook } from "../format.js";
+import { formatUserBook, boundText } from "../format.js";
 import { GET_USER_BOOKS_QUERY } from "../tools/user-books.js";
 import { USER_BOOK_STATUS } from "../types.js";
 
@@ -25,7 +25,10 @@ async function fetchShelf(statusId: number, limit: number): Promise<string> {
   });
 
   if (!data.user_books.length) return "No books found.";
-  return data.user_books.map(formatUserBook).join("\n");
+  return boundText(
+    data.user_books.map(formatUserBook).join("\n") +
+      `\n\nFirst page, at most ${limit} books; ${data.user_books.length === limit ? "more may exist" : "no more indicated"}. For continuation use hardcover://shelves/${myId}/${statusId}/20/${data.user_books.length}. Each template read costs one field.`
+  );
 }
 
 export function register(server: McpServer): void {
@@ -33,7 +36,8 @@ export function register(server: McpServer): void {
     "currently-reading",
     "hardcover://currently-reading",
     {
-      description: "Books the authenticated user is currently reading.",
+      description:
+        "Up to two API fields per read before retries (me + shelf). First 50 currently-reading books, text capped at 25000 characters. Use shelf-page template for bounded continuation.",
       mimeType: "text/plain",
     },
     async (uri) => ({
@@ -51,7 +55,8 @@ export function register(server: McpServer): void {
     "want-to-read",
     "hardcover://want-to-read",
     {
-      description: "Books on the authenticated user's want-to-read (TBR) shelf.",
+      description:
+        "Up to two API fields per read before retries (me + shelf). First 50 TBR books, text capped at 25000 characters. Use shelf-page template for bounded continuation.",
       mimeType: "text/plain",
     },
     async (uri) => ({

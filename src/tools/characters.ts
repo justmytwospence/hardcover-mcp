@@ -3,7 +3,7 @@ import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
 import { formatResult } from "../format.js";
-import { paginationSchema } from "../pagination.js";
+import { paginationSchema, computePage } from "../pagination.js";
 
 const GET_CHARACTERS_QUERY = `
   query GetCharacters($where: characters_bool_exp, $limit: Int!, $offset: Int!) {
@@ -21,7 +21,13 @@ export function register(server: McpServer): void {
       description:
         "Get fictional characters, optionally filtered by book. Returns character name, biography, and book count.",
       inputSchema: z.object({
-        book_id: z.number().int().optional().describe("Filter characters by book ID"),
+        book_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .optional()
+          .describe("Filter characters by book ID"),
         name: z.string().optional().describe("Filter by character name (exact match)"),
         ...paginationSchema,
       }),
@@ -52,7 +58,10 @@ export function register(server: McpServer): void {
           .join("\n");
 
         return formatResult(
-          { characters: data.characters },
+          {
+            characters: data.characters,
+            pagination: computePage(data.characters.length, limit, offset),
+          },
           data.characters.length ? md : "No characters found."
         );
       } catch (err) {

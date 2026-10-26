@@ -30,7 +30,13 @@ export function register(server: McpServer): void {
           .int()
           .optional()
           .describe("Tag category: 1=Genre, 2=General, 3=Content Warnings, 4=Mood, 37=Pace"),
-        book_id: z.number().int().optional().describe("Filter tags by book ID"),
+        book_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .optional()
+          .describe("Filter tags by book ID"),
         ...paginationSchema,
       }),
       annotations: {

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
 import { formatResult } from "../format.js";
-import { paginationSchema } from "../pagination.js";
+import { paginationSchema, computePage } from "../pagination.js";
 
 const GET_PROMPTS_QUERY = `
   query GetPrompts($where: prompts_bool_exp, $limit: Int!, $offset: Int!) {
@@ -21,7 +21,13 @@ export function register(server: McpServer): void {
       description:
         "Get community prompts (discussion questions). Optionally filter by book ID to get prompts related to a specific book.",
       inputSchema: z.object({
-        book_id: z.number().int().optional().describe("Filter prompts by book ID"),
+        book_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .optional()
+          .describe("Filter prompts by book ID"),
         ...paginationSchema,
       }),
       annotations: {
@@ -48,7 +54,7 @@ export function register(server: McpServer): void {
           .join("\n");
 
         return formatResult(
-          { prompts: data.prompts },
+          { prompts: data.prompts, pagination: computePage(data.prompts.length, limit, offset) },
           data.prompts.length ? md : "No prompts found."
         );
       } catch (err) {

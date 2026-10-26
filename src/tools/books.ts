@@ -12,9 +12,9 @@ export const GET_BOOK_QUERY = `
       release_date release_year rating ratings_count
       reviews_count users_read_count users_count
       audio_seconds cached_image
-      contributions { author { id name } }
+      contributions(limit: 20) { author { id name } }
       taggings(limit: 30) { tag { id tag tag_category_id } tag_id }
-      book_series { series { id name } position }
+      book_series(limit: 20) { series { id name } position }
       editions(limit: 5) { id title isbn_13 isbn_10 asin pages edition_format }
       image { url }
     }
@@ -40,9 +40,9 @@ export function register(server: McpServer): void {
     {
       title: "Get Book",
       description:
-        "Get detailed information about a book by its Hardcover ID. Returns title, authors, description, pages, rating, tags, series, and editions.",
+        "Get detailed information about a book by its Hardcover ID. Returns title, description, pages, rating, and up to 20 authors/contributions, 30 tags, 20 series and 5 editions. Nested collections may be incomplete.",
       inputSchema: z.object({
-        book_id: z.number().int().describe("The Hardcover book ID"),
+        book_id: z.number().int().positive().max(2_147_483_647).describe("The Hardcover book ID"),
       }),
       annotations: {
         readOnlyHint: true,
@@ -78,7 +78,7 @@ export function register(server: McpServer): void {
     {
       title: "Find Books",
       description:
-        "Query books with filters. Filter by title, author name, release year range, minimum rating, or tags. Results are ordered by rating by default.",
+        "Query books with filters. Filter by title, author name, release year range, or minimum rating. Results are ordered by rating by default.",
       inputSchema: z.object({
         title: z.string().optional().describe("Filter by title (exact match via _eq)"),
         author_name: z.string().optional().describe("Filter by author name"),
@@ -179,7 +179,7 @@ export function register(server: McpServer): void {
         // Fetch full book data for the IDs
         const booksQuery = `
           query GetBooks($ids: [Int!]!) {
-            books(where: { id: { _in: $ids } }) {
+            books(where: { id: { _in: $ids } }, limit: 50) {
               id title release_year rating ratings_count pages
               contributions { author { id name } }
             }

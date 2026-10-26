@@ -3,7 +3,7 @@ import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
 import { formatResult, formatUserBook } from "../format.js";
-import { paginationSchema } from "../pagination.js";
+import { paginationSchema, computePage } from "../pagination.js";
 import { USER_BOOK_STATUS_LABELS } from "../types.js";
 
 export const GET_USER_BOOKS_QUERY = `
@@ -53,7 +53,13 @@ export function register(server: McpServer): void {
       title: "Get User Books",
       description: `Get books from a user's library. Filter by status: 1=Want to Read, 2=Currently Reading, 3=Read, 4=Paused, 5=Did Not Finish, 6=Ignored. If no user_id provided, returns the authenticated user's library.`,
       inputSchema: z.object({
-        user_id: z.number().int().optional().describe("User ID (defaults to authenticated user)"),
+        user_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .optional()
+          .describe("User ID (defaults to authenticated user)"),
         status_id: z
           .number()
           .int()
@@ -108,14 +114,18 @@ export function register(server: McpServer): void {
           where,
           limit,
           offset,
-          order_by: [{ date_added: "desc" }],
+          order_by: [{ date_added: "desc" }, { id: "asc" }],
         });
 
         const statusLabel = status_id ? USER_BOOK_STATUS_LABELS[status_id] : "All";
         const md = `## ${statusLabel} Books\n\n` + data.user_books.map(formatUserBook).join("\n");
 
         return formatResult(
-          { user_books: data.user_books },
+          {
+            user_id: (where.user_id as { _eq: number })._eq,
+            user_books: data.user_books,
+            pagination: computePage(data.user_books.length, limit, offset),
+          },
           data.user_books.length ? md : "No books found with the given filters."
         );
       } catch (err) {
@@ -131,7 +141,12 @@ export function register(server: McpServer): void {
       description:
         "Add a book to your library with a reading status. Status: 1=Want to Read, 2=Currently Reading, 3=Read, 4=Paused, 5=Did Not Finish, 6=Ignored.",
       inputSchema: z.object({
-        book_id: z.number().int().describe("The Hardcover book ID to add"),
+        book_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .describe("The Hardcover book ID to add"),
         status_id: z
           .number()
           .int()
@@ -181,7 +196,12 @@ export function register(server: McpServer): void {
       description:
         "Update a book in your library. Change status, rating (0-5, supports halves like 3.5), or review text. Use hardcover_get_user_books to find the user_book_id first.",
       inputSchema: z.object({
-        user_book_id: z.number().int().describe("The user book ID (from hardcover_get_user_books)"),
+        user_book_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .describe("The user book ID (from hardcover_get_user_books)"),
         status_id: z
           .number()
           .int()
@@ -199,7 +219,7 @@ export function register(server: McpServer): void {
       }),
       annotations: {
         readOnlyHint: false,
-        destructiveHint: false,
+        destructiveHint: true,
         idempotentHint: true,
         openWorldHint: true,
       },
@@ -255,7 +275,12 @@ export function register(server: McpServer): void {
       description:
         "Remove a book from your library. This is irreversible. Use hardcover_get_user_books to find the user_book_id.",
       inputSchema: z.object({
-        user_book_id: z.number().int().describe("The user book ID to remove"),
+        user_book_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .describe("The user book ID to remove"),
       }),
       annotations: {
         readOnlyHint: false,

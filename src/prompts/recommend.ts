@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/server";
+import { PROMPT_BUDGET } from "../guidance.js";
 import { z } from "zod";
 
 export function register(server: McpServer): void {
@@ -18,6 +19,7 @@ export function register(server: McpServer): void {
     },
     async ({ mood, genre }) => {
       const parts = [
+        PROMPT_BUDGET,
         "Recommend my next read from my Hardcover library.",
         "Use the hardcover tools to:",
         "1. Check what I'm currently reading (hardcover_get_user_books with status_id=2)",

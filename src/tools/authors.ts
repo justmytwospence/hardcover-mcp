@@ -3,7 +3,7 @@ import { z } from "zod";
 import { graphql } from "../client.js";
 import { formatToolError } from "../errors.js";
 import { formatResult, formatAuthor } from "../format.js";
-import { paginationSchema } from "../pagination.js";
+import { paginationSchema, computePage } from "../pagination.js";
 
 const GET_AUTHOR_QUERY = `
   query GetAuthor($id: Int!) {
@@ -32,9 +32,14 @@ export function register(server: McpServer): void {
     {
       title: "Get Author",
       description:
-        "Get detailed information about an author by ID, including biography, dates, and their top-rated books.",
+        "Get detailed information about an author by ID, including biography, dates, and up to 20 top-rated books (may be incomplete).",
       inputSchema: z.object({
-        author_id: z.number().int().describe("The Hardcover author ID"),
+        author_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .describe("The Hardcover author ID"),
       }),
       annotations: {
         readOnlyHint: true,
@@ -91,7 +96,7 @@ export function register(server: McpServer): void {
     {
       title: "Find Authors",
       description:
-        "Search for authors by name. Use hardcover_search with type 'author' for fuzzy/full-text search instead.",
+        "Search for authors by name. Use hardcover_search with type 'Author' for fuzzy/full-text search instead.",
       inputSchema: z.object({
         name: z.string().optional().describe("Author name (exact match)"),
         ...paginationSchema,
@@ -116,7 +121,10 @@ export function register(server: McpServer): void {
           .map((a) => `- **${a.name}** (${a.books_count ?? 0} books) [ID: ${a.id}]`)
           .join("\n");
 
-        return formatResult({ authors: data.authors }, md || "No authors found.");
+        return formatResult(
+          { authors: data.authors, pagination: computePage(data.authors.length, limit, offset) },
+          md || "No authors found."
+        );
       } catch (err) {
         return formatToolError(err);
       }

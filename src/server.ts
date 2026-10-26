@@ -1,5 +1,9 @@
 import { createRequire } from "node:module";
 import { McpServer } from "@modelcontextprotocol/server";
+import { INSTRUCTIONS } from "./guidance.js";
+import { formatResult } from "./format.js";
+import { register as registerUsageResources } from "./resources/usage.js";
+import { register as registerPageResources } from "./resources/pages.js";
 
 import { register as registerBooks } from "./tools/books.js";
 import { register as registerAuthors } from "./tools/authors.js";
@@ -37,17 +41,36 @@ export const VERSION: string = createRequire(import.meta.url)("../package.json")
  * stdio once per process, so keep it free of side effects and I/O.
  */
 export function createServer(): McpServer {
-  const server = new McpServer({ name: SERVER_NAME, version: VERSION });
+  const server = new McpServer(
+    { name: SERVER_NAME, version: VERSION },
+    { instructions: INSTRUCTIONS }
+  );
 
-  // Wrap registerTool to append API cost to each tool's description
+  // Keep native registration/validation, supplementing cost and safe retry guidance.
   const originalRegisterTool = server.registerTool.bind(server);
   server.registerTool = (name: string, config: any, handler: any) => {
     const cost = TOOL_COSTS[name];
     if (cost !== undefined && config.description) {
-      const costLabel = cost === 0 ? "no API calls" : `${cost} API call${cost > 1 ? "s" : ""}`;
+      const costLabel =
+        cost === 0 ? "zero network calls" : `up to ${cost} top-level GraphQL fields before retries`;
       config.description += ` [API cost: ${costLabel}]`;
+      if (cost > 0)
+        config.description +=
+          " Check hardcover_get_rate_limit before multi-page work; every retry costs again. Honor RateLimit/RateLimit-Policy/Retry-After and cooldowns. Use bounded pages; do not fan out detail lookups.";
+      if (name === "hardcover_get_user_books" || name === "hardcover_get_goals")
+        config.description += " With user_id: 1 field; without: up to 2 (me + data).";
+      if (name === "hardcover_search_books")
+        config.description += " Empty search: 1 field; search plus batched details: 2.";
+      if (!config.annotations?.readOnlyHint)
+        config.description +=
+          " Never automatically replay a write. On timeout/connection loss/5xx, reconcile remote state before any authorized retry. Hints are not approval gates.";
     }
-    return originalRegisterTool(name, config, handler);
+    return originalRegisterTool(name, config, async (...args: any[]) => {
+      const result = await handler(...args);
+      if (result.structuredContent) return result;
+      // Legacy not-found/validation branches retain text without claiming absent machine data.
+      return { ...formatResult(null), ...result };
+    });
   };
 
   registerBooks(server);
@@ -67,6 +90,8 @@ export function createServer(): McpServer {
   registerTags(server);
   registerRateLimit(server);
 
+  registerUsageResources(server);
+  registerPageResources(server);
   registerProfileResource(server);
   registerShelvesResource(server);
   registerGoalsResource(server);

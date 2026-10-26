@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { graphql } from "../client.js";
+import { boundText } from "../format.js";
 import { GET_GOALS_QUERY } from "../tools/goals.js";
 
 export function register(server: McpServer): void {
@@ -7,7 +8,8 @@ export function register(server: McpServer): void {
     "goals",
     "hardcover://goals",
     {
-      description: "The authenticated user's reading goals for the current year.",
+      description:
+        "Up to two API fields per read before retries (me + goals). Current-year reading goals, at most 100, text capped at 25000 characters. Not a complete history.",
       mimeType: "text/plain",
     },
     async (uri) => {
@@ -64,7 +66,7 @@ export function register(server: McpServer): void {
         .join("\n");
 
       return {
-        contents: [{ uri: uri.href, text, mimeType: "text/plain" }],
+        contents: [{ uri: uri.href, text: boundText(text), mimeType: "text/plain" }],
       };
     }
   );

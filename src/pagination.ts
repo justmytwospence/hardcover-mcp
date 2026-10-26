@@ -8,7 +8,13 @@ export const paginationSchema = {
     .max(100)
     .default(20)
     .describe("Maximum results to return (1-100, default 20)"),
-  offset: z.number().int().min(0).default(0).describe("Number of results to skip for pagination"),
+  offset: z
+    .number()
+    .int()
+    .min(0)
+    .max(2_147_483_647)
+    .default(0)
+    .describe("Number of results to skip for pagination"),
 };
 
 export interface PaginationMeta {
@@ -27,6 +33,17 @@ export function computePagination(total: number, count: number, offset: number):
     offset,
     has_more: hasMore,
     ...(hasMore ? { next_offset: offset + count } : {}),
+  };
+}
+
+/** No aggregate queried: a full page only suggests that another page may exist. */
+export function computePage(count: number, limit: number, offset: number) {
+  return {
+    count,
+    limit,
+    offset,
+    has_more: count === limit ? "unknown" : false,
+    ...(count === limit ? { next_offset: offset + count } : {}),
   };
 }
 

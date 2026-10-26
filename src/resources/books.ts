@@ -1,6 +1,7 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/server";
 import { graphql } from "../client.js";
-import { formatBook } from "../format.js";
+import { formatBook, boundText } from "../format.js";
+import { uriInteger } from "./pages.js";
 import { GET_BOOK_QUERY } from "../tools/books.js";
 
 export function register(server: McpServer): void {
@@ -8,12 +9,15 @@ export function register(server: McpServer): void {
     "book",
     new ResourceTemplate("hardcover://books/{book_id}", { list: undefined }),
     {
-      description: "Detailed information about a specific book by Hardcover ID.",
+      description:
+        "One API field per read before retries. Detailed book information by positive integer ID, with bounded nested selections. Text capped at 25000 characters; use hardcover_get_book for machine data.",
       mimeType: "text/plain",
     },
     async (uri, variables) => {
-      const bookId = parseInt(String(variables.book_id), 10);
-      if (isNaN(bookId)) {
+      let bookId: number;
+      try {
+        bookId = uriInteger(variables.book_id, "book_id");
+      } catch {
         return {
           contents: [{ uri: uri.href, text: "Invalid book ID.", mimeType: "text/plain" }],
         };
@@ -28,7 +32,7 @@ export function register(server: McpServer): void {
         : `Book with ID ${bookId} not found.`;
 
       return {
-        contents: [{ uri: uri.href, text, mimeType: "text/plain" }],
+        contents: [{ uri: uri.href, text: boundText(text), mimeType: "text/plain" }],
       };
     }
   );

@@ -1,6 +1,14 @@
 import { USER_BOOK_STATUS_LABELS, TAG_CATEGORY_LABELS } from "./types.js";
 
-const CHARACTER_LIMIT = 25_000;
+export const CHARACTER_LIMIT = 25_000;
+const MACHINE_LIMIT = 500_000;
+
+export function boundText(text: string): string {
+  return text.length > CHARACTER_LIMIT
+    ? text.slice(0, CHARACTER_LIMIT) +
+        "\n\n_[Response truncated. Use limit/offset to paginate; this is not a complete view.]_"
+    : text;
+}
 
 export function formatResult(
   data: unknown,
@@ -9,15 +17,26 @@ export function formatResult(
   content: Array<{ type: "text"; text: string }>;
   [key: string]: unknown;
 } {
-  const json = JSON.stringify(data, null, 2);
+  const payload = data ?? null;
+  const json = JSON.stringify(payload, null, 2);
   const text = markdown ?? json;
-  const truncated =
-    text.length > CHARACTER_LIMIT
-      ? text.slice(0, CHARACTER_LIMIT) + "\n\n_[Response truncated. Use limit/offset to paginate.]_"
-      : text;
-
+  const dataTruncated = json.length > MACHINE_LIMIT;
   return {
-    content: [{ type: "text", text: truncated }],
+    content: [{ type: "text", text: boundText(text) }],
+    structuredContent: {
+      data: dataTruncated ? { truncated_json_prefix: json.slice(0, MACHINE_LIMIT) } : payload,
+      metadata: {
+        source: "hardcover-mcp",
+        text_truncated: text.length > CHARACTER_LIMIT,
+        data_truncated: dataTruncated,
+        ...(dataTruncated
+          ? {
+              warning:
+                "Machine payload exceeded 500000 characters; prefix is not complete JSON. Reduce page size; do not treat this as a complete view.",
+            }
+          : {}),
+      },
+    },
   };
 }
 

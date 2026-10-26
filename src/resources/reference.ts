@@ -7,7 +7,7 @@ export function register(server: McpServer): void {
     "hardcover://reference/statuses",
     {
       description:
-        "Reference data for Hardcover status codes, tag categories, reading formats, and privacy settings.",
+        "Zero API calls. Local reference data for Hardcover status codes, tag categories, reading formats, and privacy settings.",
       mimeType: "application/json",
     },
     async (uri) => {

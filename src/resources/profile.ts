@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { graphql } from "../client.js";
+import { boundText } from "../format.js";
 
 const GET_PROFILE_QUERY = `
   query {
@@ -15,7 +16,8 @@ export function register(server: McpServer): void {
     "profile",
     "hardcover://profile",
     {
-      description: "The authenticated user's Hardcover profile with reading stats.",
+      description:
+        "One API field per read before retries. Authenticated user profile with reading stats, text capped at 25000 characters.",
       mimeType: "text/plain",
     },
     async (uri) => {
@@ -45,7 +47,7 @@ export function register(server: McpServer): void {
       );
 
       return {
-        contents: [{ uri: uri.href, text: lines.join("\n"), mimeType: "text/plain" }],
+        contents: [{ uri: uri.href, text: boundText(lines.join("\n")), mimeType: "text/plain" }],
       };
     }
   );

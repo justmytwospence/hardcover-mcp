@@ -82,7 +82,13 @@ export function register(server: McpServer): void {
       title: "Get User",
       description: "Get a user's public profile by their ID or username.",
       inputSchema: z.object({
-        user_id: z.number().int().optional().describe("Hardcover user ID"),
+        user_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .optional()
+          .describe("Hardcover user ID"),
         username: z.string().optional().describe("Hardcover username"),
       }),
       annotations: {

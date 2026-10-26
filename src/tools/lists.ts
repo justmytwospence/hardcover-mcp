@@ -11,7 +11,7 @@ const GET_LIST_QUERY = `
       id name description books_count likes_count followers_count
       ranked public privacy_setting_id
       user { id username }
-      list_books(order_by: { position: asc_nulls_last }, limit: 50) {
+      list_books(order_by: [{ position: asc_nulls_last }, { id: asc }], limit: 50) {
         id position date_added
         book { id title rating release_year
           contributions { author { name } }
@@ -39,9 +39,10 @@ export function register(server: McpServer): void {
     "hardcover_get_list",
     {
       title: "Get List",
-      description: "Get a list by ID including its books.",
+      description:
+        "Get a list by ID with its first 50 books (not a complete list). Use hardcover://lists/{list_id}/{limit}/{offset} for subsequent bounded pages.",
       inputSchema: z.object({
-        list_id: z.number().int().describe("The Hardcover list ID"),
+        list_id: z.number().int().positive().max(2_147_483_647).describe("The Hardcover list ID"),
       }),
       annotations: {
         readOnlyHint: true,
@@ -78,7 +79,13 @@ export function register(server: McpServer): void {
       title: "Find Lists",
       description: "Search for lists. Optionally filter by user ID or public visibility.",
       inputSchema: z.object({
-        user_id: z.number().int().optional().describe("Filter by list owner's user ID"),
+        user_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .optional()
+          .describe("Filter by list owner's user ID"),
         public_only: z.boolean().default(false).describe("Only show public lists"),
         ...paginationSchema,
       }),
@@ -182,7 +189,7 @@ export function register(server: McpServer): void {
       title: "Update List",
       description: "Update a list's name, description, or privacy setting. You must own the list.",
       inputSchema: z.object({
-        list_id: z.number().int().describe("The list ID to update"),
+        list_id: z.number().int().positive().max(2_147_483_647).describe("The list ID to update"),
         name: z.string().optional().describe("New list name"),
         description: z.string().optional().describe("New description"),
         privacy_setting_id: z
@@ -195,7 +202,7 @@ export function register(server: McpServer): void {
       }),
       annotations: {
         readOnlyHint: false,
-        destructiveHint: false,
+        destructiveHint: true,
         idempotentHint: true,
         openWorldHint: true,
       },
@@ -253,7 +260,7 @@ export function register(server: McpServer): void {
       title: "Delete List",
       description: "Permanently delete a list. This is irreversible. You must own the list.",
       inputSchema: z.object({
-        list_id: z.number().int().describe("The list ID to delete"),
+        list_id: z.number().int().positive().max(2_147_483_647).describe("The list ID to delete"),
       }),
       annotations: {
         readOnlyHint: false,
@@ -285,8 +292,8 @@ export function register(server: McpServer): void {
       title: "Add Book to List",
       description: "Add a book to a list at an optional position.",
       inputSchema: z.object({
-        list_id: z.number().int().describe("The list ID"),
-        book_id: z.number().int().describe("The book ID to add"),
+        list_id: z.number().int().positive().max(2_147_483_647).describe("The list ID"),
+        book_id: z.number().int().positive().max(2_147_483_647).describe("The book ID to add"),
         position: z.number().int().optional().describe("Position in the list (optional)"),
       }),
       annotations: {
@@ -332,7 +339,12 @@ export function register(server: McpServer): void {
       description:
         "Remove a book from a list. Use hardcover_get_list to find the list_book_id first.",
       inputSchema: z.object({
-        list_book_id: z.number().int().describe("The list book ID (from hardcover_get_list)"),
+        list_book_id: z
+          .number()
+          .int()
+          .positive()
+          .max(2_147_483_647)
+          .describe("The list book ID (from hardcover_get_list)"),
       }),
       annotations: {
         readOnlyHint: false,
@@ -367,7 +379,7 @@ export function register(server: McpServer): void {
       title: "Follow List",
       description: "Follow a list to see updates.",
       inputSchema: z.object({
-        list_id: z.number().int().describe("The list ID to follow"),
+        list_id: z.number().int().positive().max(2_147_483_647).describe("The list ID to follow"),
       }),
       annotations: {
         readOnlyHint: false,
@@ -399,11 +411,11 @@ export function register(server: McpServer): void {
       title: "Unfollow List",
       description: "Stop following a list.",
       inputSchema: z.object({
-        list_id: z.number().int().describe("The list ID to unfollow"),
+        list_id: z.number().int().positive().max(2_147_483_647).describe("The list ID to unfollow"),
       }),
       annotations: {
         readOnlyHint: false,
-        destructiveHint: false,
+        destructiveHint: true,
         idempotentHint: true,
         openWorldHint: true,
       },
