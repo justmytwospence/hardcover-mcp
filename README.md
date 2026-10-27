@@ -191,3 +191,7 @@ Tests use injected transports/clocks and synthetic API fixtures only: no real ac
 
 Releases: push a `vX.Y.Z` tag and the `release` workflow publishes
 `ghcr.io/justmytwospence/hardcover-mcp:X.Y.Z` (plus `:X.Y` and `:X`) for amd64 and arm64.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
